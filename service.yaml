@@ -4,13 +4,12 @@ kind: Service
 metadata:
   labels:
     app: flaskapi
-  name: flakapi
+  name: flaskapi
 spec:
   type: NodePort
   ports:
     - port: 5000
       targetPort: 5000
-      nodePort: 30100
       protocol: TCP
   selector:
     app: flakapi
