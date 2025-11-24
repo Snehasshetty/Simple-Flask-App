@@ -1,87 +1,68 @@
-# Makefile for Simple-Flask-App (Flask + Docker + venv)
+# Makefile for Simple-Flask-App (Python 3.12 compatible)
 
 APP_NAME := simple-flask-app
 IMAGE_NAME := apoorvad4/$(APP_NAME)
 PORT := 5070
 
-VENV := venv
-PYTHON := $(VENV)/bin/python3
-PIP := $(VENV)/bin/pip
-FLAKE8 := $(VENV)/bin/flake8
-PYTEST := $(VENV)/bin/pytest
-AUTOFLAKE := $(VENV)/bin/autoflake
-AUTOPEP8 := $(VENV)/bin/autopep8
-
 .DEFAULT_GOAL := help
-
-.PHONY: help install lint lint-fix test test-report run docker-build docker-run docker-push clean
 
 help:
 	@echo "Available targets:"
-	@echo "  make install        - Create virtualenv and install Python dependencies"
+	@echo "  make install        - Install Python dependencies (system-wide safe)"
 	@echo "  make lint           - Run flake8 for code quality"
-	@echo "  make lint-fix       - Automatically fix lint issues"
-	@echo "  make test           - Run application tests (pytest if available)"
-	@echo "  make test-report    - Generate a test report (dummy if no tests)"
-	@echo "  make run            - Run the Flask app locally"
+	@echo "  make lint-fix       - Auto-fix lint issues"
+	@echo "  make test           - Run tests (pytest if installed)"
+	@echo "  make test-report    - Generate test report"
+	@echo "  make run            - Run the Flask app"
 	@echo "  make docker-build   - Build Docker image"
 	@echo "  make docker-run     - Run Docker container"
 	@echo "  make docker-push    - Push Docker image to Docker Hub"
-	@echo "  make clean          - Remove build artifacts and virtual environment"
+	@echo "  make clean          - Clean workspace"
 
-# Create virtual environment and install base deps
-$(VENV):
-	@echo "Creating virtual environment in $(VENV)..."
-	python3 -m venv $(VENV)
-	@echo "Installing dependencies from requirements.txt into venv..."
-	$(PIP) install -r requirements.txt
+install:
+	@echo "Installing dependencies using system Python..."
+	pip install --break-system-packages -r requirements.txt
 
-install: $(VENV)
-	@echo "Virtual environment ready and dependencies installed."
+lint:
+	@echo "Installing flake8..."
+	pip install --break-system-packages flake8 --upgrade
+	flake8 . || echo "Lint completed with warnings."
 
-lint: $(VENV)
-	@echo "Running flake8 inside virtualenv..."
-	$(PIP) install flake8 --upgrade
-	$(FLAKE8) . || echo "Lint completed with warnings or skipped."
+lint-fix:
+	@echo "Installing autoflake and autopep8..."
+	pip install --break-system-packages autoflake autopep8 --upgrade
+	autoflake --in-place --recursive .
+	autopep8 --in-place --recursive . || echo "Auto-fix completed."
 
-lint-fix: $(VENV)
-	@echo "Fixing lint issues (autoflake + autopep8) inside virtualenv..."
-	$(PIP) install autoflake autopep8 --upgrade
-	$(AUTOFLAKE) --in-place --recursive .
-	$(AUTOPEP8) --in-place --recursive . || echo "Auto-fix completed with warnings or skipped."
+test:
+	@echo "Installing pytest..."
+	pip install --break-system-packages pytest --upgrade || true
+	pytest || echo "No tests defined, skipping."
 
-test: $(VENV)
-	@echo "Running tests with pytest (if any)..."
-	$(PIP) install pytest --upgrade
-	$(PYTEST) || echo "No tests defined, skipping."
-
-test-report: $(VENV)
+test-report:
 	@echo "Generating test report..."
-	@mkdir -p reports
-	$(PIP) install pytest --upgrade
-	$(PYTEST) --junitxml=reports/test-results.xml || echo "Generated dummy test report."
+	mkdir -p reports
+	pip install --break-system-packages pytest --upgrade || true
+	pytest --junitxml=reports/test-results.xml || echo "Generated dummy report."
 
-run: $(VENV)
-	@echo "Running Flask app on port $(PORT) with python3 (in background)..."
-	$(PYTHON) product_list_app.py &
+run:
+	@echo "Installing dependencies first..."
+	pip install --break-system-packages -r requirements.txt
+	@echo "Running Flask app..."
+	python3 product_list_app.py &
 
 docker-build:
 	@echo "Building Docker image: $(IMAGE_NAME)"
 	docker build -t $(IMAGE_NAME) .
 
 docker-run:
-	@echo "Running container on port $(PORT)"
+	@echo "Running container..."
 	docker run -d -p $(PORT):$(PORT) --name $(APP_NAME) $(IMAGE_NAME)
 
 docker-push:
-	@echo "Pushing image to Docker Hub..."
 	docker push $(IMAGE_NAME)
 
 clean:
-	@echo "Cleaning up..."
-	rm -rf __pycache__
-	rm -rf .pytest_cache
-	rm -rf reports
-	rm -rf $(VENV)
+	@echo "Cleaning..."
+	rm -rf __pycache__ .pytest_cache reports
 	docker rm -f $(APP_NAME) 2>/dev/null || true
-
