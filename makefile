@@ -25,13 +25,14 @@ install:
 
 lint:
 	@echo "Running flake8..."
-	pip install flake8 --upgrade
+	pip install --break-system-packages flake8 --upgrade
 	flake8 . || echo "Lint completed with warnings or skipped."
 
 lint-fix:
 	@echo "Fixing lint issues..."
-	pip install autoflake autopep8 --upgrade
+	pip install --break-system-packages autoflake autopep8 --upgrade
 	autoflake --in-place --recursive . && autopep8 --in-place --recursive . || echo "Auto-fix completed with warnings or skipped."
+
 
 test:
 	@echo "Running tests..."
